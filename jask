@@ -36,20 +36,20 @@ try {
 		initialize: function(){
 			Jask.Tasks = this.Tasks;
 			var opts = new GetOpt();
-			opts.add('taskfile', 'The tasksfile to use.',
-					 'taskfile', 't', 'taskfile', GetOpt.REQUIRED_ARGUMENT);
-			opts.add('list', 'List all available tasks.',
-					 false, 'l', 'list', GetOpt.NO_ARGUMENT);
+			opts.add('taskfile', 'The tasksfile to use.', 'taskfile', 't', 'taskfile', GetOpt.REQUIRED_ARGUMENT);
+			opts.add('list', 'List all available tasks.', false, 'l', 'list', GetOpt.NO_ARGUMENT);
+			opts.add('help', 'Show help text.', false, 'h', 'help', GetOpt.NO_ARGUMENT);
 
 			if (arguments.length != 0) {
 				opts.parse(arguments[arguments.length - 1]);
 				var taskfile = new File(this.cwd + opts.get('taskfile'));
 				if (!taskfile.isFile()) {
-					console.log('No taskfile found!');
+					console.log('\nNo taskfile found! Use --help for more details.\n');
 					return null;
 				} else {
 					this.parseTasksFile(taskfile.toString());
 					if (opts.get('list')) return this.listTasks();
+					if (opts.get('help')) return this.help();
 					var task_args = opts.get();
 					if (task_args.length !== 0) {
 						var metargs = task_args.shift().split(':');
@@ -59,11 +59,14 @@ try {
 							Jask.Args = task_args;
 							this.Tasks[nspace][action].apply(this.Tasks[nspace], task_args);
 							return null;
+						} else {
+							console.log('\nNo such task! Use --help for more details or --list to see available tasks.\n');
+							return null;
 						}
 					}
 				}
 			}
-			return this.listTasks();
+			return this.help();
 		},
 	
 		parseTasksFile: function(taskfile){
@@ -118,6 +121,17 @@ try {
 					buff += "  " + ns + ":" + item + " "  + itemargs + "\t" + itemdesc + "\n";
 				}
 			}
+			console.log(buff);
+			return null;
+		},
+		
+		help: function(){
+			var buff = "JASK: Javascript Tasks\nUsage:\n";
+			buff += "  $ jask [-t=taskfile] namespace:task args\n";
+			buff += "  $ jask -l\n\nOptions:\n";
+			buff += "  -t=file,\t\tSet taskfile.\n  --taskfile=file\n";
+			buff += "  -l, --list\t\tList available tasks\n";
+			buff += "  -h, --help\t\tShow this help text.\n";
 			console.log(buff);
 			return null;
 		}
