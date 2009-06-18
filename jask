@@ -17,7 +17,7 @@ var console = {
 	},
 
 	dir: function(){ 
-		console.log(Util.serialize.apply(this, arguments));
+		console.log(JSON.stringify.apply(this, arguments));
 	}
 };
 
