@@ -55,7 +55,7 @@ try {
 						var metargs = task_args.shift().split(':');
 						var nspace = metargs[0];
 						var action = metargs[1];
-						if (this.Tasks[nspace] && this.Tasks[nspace][action]) {
+						if (action.charAt(0) !== '_' && this.Tasks[nspace] && this.Tasks[nspace][action]) {
 							Jask.Args = task_args;
 							this.Tasks[nspace][action].apply(this.Tasks[nspace], task_args);
 							return null;
