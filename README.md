@@ -7,10 +7,22 @@ Jask is a simple task runner written in Javascript and powered by [v8cgi](http:/
 Installing Jask
 ---------------
 
-	git clone git://github.com/keeto/jask.git jask
-	cd jask
-	chmod +x jask
-	cp jask /usr/bin
+	$ git clone git://github.com/keeto/jask.git jask
+	$ cd jask
+	$ chmod +x jask
+	$ cp jask /usr/bin
+	$ jask
+	
+	JASK: Javascript Tasks
+	Usage:
+	  $ jask [-t=taskfile] namespace:task args
+	  $ jask -l
+
+	Options:
+	  -t=file,		Set taskfile.
+	  --taskfile=file
+	  -l, --list		List available tasks
+	  -h, --help		Show this help text.
 
 
 Using Jask
