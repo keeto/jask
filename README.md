@@ -51,11 +51,16 @@ Taskfiles are simple Javascript files that contain a single `export` declaration
 		task2: function(name, address){
 			this.tast1(name);
 			console.log('You live in ' + address + '.\n');
+			this._hidden();
+		},
+		
+		_hidden: function(){
+			console.log('I\'m from a hidden function!\n');
 		}
 		
 	};
 
-The taskfile above will create a new namespace named `myTask` with two tasks, `task1` and `task2`. It is absolutely necessary to add the export declaration together with the namespace, or Jask will not run.
+The taskfile above will create a new namespace named `myTask` with two tasks, `task1` and `task2`. The function `_hidden`, as well as any other function that starts with an underscore, is a private function. It is absolutely necessary to add the export declaration together with the namespace, or Jask will not run.
 
 Each task is a simple javascript function. Because task namespaces are objects, you can use `this` to refer to the current namespace. You also have access to the global namespace (via `global`). And because taskfiles are plain v8cgi javascript files, you can include any modules you'll need on your taskfile using the `include` and `require` declarations (see the [v8cgi docs](http://code.google.com/p/v8cgi/wiki/API) for more details).
 
