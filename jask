@@ -1,0 +1,134 @@
+#! /usr/bin/env v8cgi
+
+/*
+Jask: Javascript Tasks
+	Simple JS Tasks using V8CGI.
+
+License:
+	MIT-Style License (See included README file for details).
+	
+Copyright:
+	Copyright 2009 Mark Obcena, <http://keetology.com>
+*/
+
+var console = {
+	log: function(){
+		System.stdout.apply(this, arguments);
+	},
+
+	dir: function(){ 
+		console.log(Util.serialize.apply(this, arguments));
+	}
+};
+
+try {
+	
+	include('getopt');
+	
+	var Jask = {
+	
+		Tasks: {},
+		Args: [],
+		Descs: {},
+	
+		cwd: System.getcwd() + "/",
+	
+		initialize: function(){
+			Jask.Tasks = this.Tasks;
+			var opts = new GetOpt();
+			opts.add('taskfile', 'The tasksfile to use.',
+					 'taskfile', 't', 'taskfile', GetOpt.REQUIRED_ARGUMENT);
+			opts.add('list', 'List all available tasks.',
+					 false, 'l', 'list', GetOpt.NO_ARGUMENT);
+
+			if (arguments.length != 0) {
+				opts.parse(arguments[arguments.length - 1]);
+				var taskfile = new File(this.cwd + opts.get('taskfile'));
+				if (!taskfile.isFile()) {
+					console.log('No taskfile found!');
+					return null;
+				} else {
+					this.parseTasksFile(taskfile.toString());
+					if (opts.get('list')) return this.listTasks();
+					var task_args = opts.get();
+					if (task_args.length !== 0) {
+						var metargs = task_args.shift().split(':');
+						var nspace = metargs[0];
+						var action = metargs[1];
+						if (this.Tasks[nspace] && this.Tasks[nspace][action]) {
+							Jask.Args = task_args;
+							this.Tasks[nspace][action].apply(this.Tasks[nspace], task_args);
+							return null;
+						}
+					}
+				}
+			}
+			return this.listTasks();
+		},
+	
+		parseTasksFile: function(taskfile){
+				taskfile = include(taskfile);
+				for (var namespace in taskfile) {
+					var tasklist = this.Tasks[namespace] = {};
+					for (var item in taskfile[namespace]) {
+						if (item == 'Include') {
+							var includes = taskfile[namespace][item];
+							for (var x = 0, y = includes.length; x < y; x++) {
+								this.parseTasksFile(this.cwd + includes[x]);
+							}
+						} else if (item == 'Desc') {
+							this.Descs[namespace] = taskfile[namespace][item];
+						} else {
+							this.parseTask(item, namespace, taskfile[namespace][item]);
+						}
+					}
+				};
+		},
+	
+		parseTask: function(item, nspace, func){
+			var parseName = item.match(/([\d\D]+)[\s]([>|<])[\s]([\d\D]+)/);
+			if (parseName) {
+				item = parseName[1];
+				var condition = parseName[2];
+				var p = parseName[3].split(':');
+				var oitem = p[1];
+				var onspa = p[0] || nspace;
+				var funn = null;
+				if (condition == '<') {
+					funn = function(){
+						Jask.Tasks[onspa][oitem].apply(Jask.Tasks[onspa], arguments);
+						func.apply(Jask.Tasks[nspace], arguments);
+					};
+				} else {
+					funn = function(){
+						func.apply(Jask.Tasks[nspace], arguments);
+						Jask.Tasks[onspa][oitem].apply(Jask.Tasks[onspa], arguments);
+					};
+				}
+			}
+			this.Tasks[nspace][item] = funn || func;
+		},
+	
+		listTasks: function(){
+			var buff = "\nAvailable Tasks:\n\n";
+			for (var ns in this.Descs) {
+				for (var item in this.Descs[ns]) {
+					var itemargs = this.Descs[ns][item][1] || "";
+					var itemdesc = this.Descs[ns][item][0];
+					buff += "  " + ns + ":" + item + " "  + itemargs + "\t" + itemdesc + "\n";
+				}
+			}
+			console.log(buff);
+			return null;
+		}
+	
+	}
+
+	Jask.Args = [];
+	Jask.Tasks = {};
+
+	Jask.initialize(arguments);
+
+} catch(e) {
+	console.log(e);
+}
