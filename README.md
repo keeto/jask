@@ -42,7 +42,7 @@ Taskfiles
 
 Taskfiles are simple Javascript files that contain a single `export` declaration:
 
-	export.myTasts = {
+	exports.myTasks = {
 		
 		task1: function(name){
 			console.log("Hello, " + name + '!\n');
@@ -71,7 +71,7 @@ Including Other Taskfiles
 
 To simplify the process of including other taskfiles, you can include an `Include` property on your taskfile, which is an array of filenames for other taskfiles:
 
-	export.myTasts = {
+	exports.myTasks = {
 		
 		Include: ['myOtherTasks', 'moretasks/tasks.js'],
 	
@@ -89,7 +89,7 @@ Task Dependencies
 
 You can specify simple dependencies using your task names:
 
-	export.myTasts = {
+	exports.myTasks = {
 	
 		getWater: function(){
 			console.log("Got water!\n");
@@ -118,7 +118,7 @@ Documenting Your Task
 
 You can document your tasks by adding a `Desc` property on your taskfile:
 
-	export.myTasts = {
+	exports.myTasks = {
 		
 		Desc: {
 			getWater: ['Gets some water'],
