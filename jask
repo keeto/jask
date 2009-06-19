@@ -94,11 +94,12 @@ try {
 				item = parseName[1];
 				var condition = parseName[2];
 				var p = parseName[3].split(':');
-				var oitem = p[1];
-				var onspa = p[0] || nspace;
+				var oitem = (p.length == 1) ? p[0] : p[1];
+				var onspa = (p.length > 1) ? p[0] : nspace;
 				var funn = null;
 				if (condition == '<') {
 					funn = function(){
+						console.log(onspa);
 						Jask.Tasks[onspa][oitem].apply(Jask.Tasks[onspa], arguments);
 						func.apply(Jask.Tasks[nspace], arguments);
 					};
