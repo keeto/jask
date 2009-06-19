@@ -99,7 +99,6 @@ try {
 				var funn = null;
 				if (condition == '<') {
 					funn = function(){
-						console.log(onspa);
 						Jask.Tasks[onspa][oitem].apply(Jask.Tasks[onspa], arguments);
 						func.apply(Jask.Tasks[nspace], arguments);
 					};
