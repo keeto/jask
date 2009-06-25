@@ -6,33 +6,33 @@ Jask: Javascript Tasks
 
 License:
 	MIT-Style License (See included README file for details).
-	
+
 Copyright:
 	Copyright 2009 Mark Obcena, <http://keetology.com>
 */
 
 var console = {
 	log: function(){
-		System.stdout.apply(this, arguments);
+		system.stdout.apply(this, arguments);
 	},
 
-	dir: function(){ 
+	dir: function(){
 		console.log(JSON.stringify.apply(this, arguments));
 	}
 };
 
 try {
-	
+
 	include('getopt');
-	
+
 	var Jask = {
-	
+
 		Tasks: {},
 		Args: [],
 		Descs: {},
-	
-		cwd: System.getcwd() + "/",
-	
+
+		cwd: system.getcwd() + "/",
+
 		initialize: function(){
 			Jask.Tasks = this.Tasks;
 			var opts = new GetOpt();
@@ -40,8 +40,8 @@ try {
 			opts.add('list', 'List all available tasks.', false, 'l', 'list', GetOpt.NO_ARGUMENT);
 			opts.add('help', 'Show help text.', false, 'h', 'help', GetOpt.NO_ARGUMENT);
 
-			if (arguments.length != 0) {
-				opts.parse(arguments[arguments.length - 1]);
+			if (arguments.length > 1) {
+				opts.parse();
 				var taskfile = new File(this.cwd + opts.get('taskfile'));
 				if (!taskfile.isFile()) {
 					console.log('\nNo taskfile found! Use --help for more details.\n');
@@ -68,7 +68,7 @@ try {
 			}
 			return this.help();
 		},
-	
+
 		parseTasksFile: function(taskfile){
 				taskfile = include(taskfile);
 				for (var namespace in taskfile) {
@@ -87,7 +87,7 @@ try {
 					}
 				};
 		},
-	
+
 		parseTask: function(item, nspace, func){
 			var parseName = item.match(/([\d\D]+)[\s]([>|<])[\s]([\d\D]+)/);
 			if (parseName) {
@@ -111,7 +111,7 @@ try {
 			}
 			this.Tasks[nspace][item] = funn || func;
 		},
-	
+
 		listTasks: function(){
 			var buff = "\nAvailable Tasks:\n\n";
 			for (var ns in this.Descs) {
@@ -124,7 +124,7 @@ try {
 			console.log(buff);
 			return null;
 		},
-		
+
 		help: function(){
 			var buff = "JASK: Javascript Tasks\nUsage:\n";
 			buff += "  $ jask [-t=taskfile] namespace:task args\n";
@@ -135,13 +135,14 @@ try {
 			console.log(buff);
 			return null;
 		}
-	
+
 	}
 
 	Jask.Args = [];
 	Jask.Tasks = {};
 
-	Jask.initialize(arguments);
+	system.args.shift();
+	Jask.initialize(system.args);
 
 } catch(e) {
 	console.log(e);

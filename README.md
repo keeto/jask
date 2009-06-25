@@ -7,6 +7,8 @@ Jask is a simple task runner written in Javascript and powered by [v8cgi](http:/
 Installing Jask
 ---------------
 
+The current version of Jask requires v8cgi 0.6.0. You can find more information regarding installing v8cgi on the Google Code project page ([link](http://code.google.com/p/v8cgi/)).
+
 	$ git clone git://github.com/keeto/jask.git jask
 	$ cd jask
 	$ chmod +x jask
