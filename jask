@@ -12,7 +12,7 @@ Copyright:
 */
 
 // Add compat for older v8cgi versions.
-if (System && !system) system = System;
+system = system || System;
 
 var console = {
 	log: function(){
