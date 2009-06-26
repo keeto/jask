@@ -11,6 +11,9 @@ Copyright:
 	Copyright 2009 Mark Obcena, <http://keetology.com>
 */
 
+// Add compat for older v8cgi versions.
+if (System && !system) system = System;
+
 var console = {
 	log: function(){
 		system.stdout.apply(this, arguments);
@@ -41,7 +44,7 @@ try {
 			opts.add('help', 'Show help text.', false, 'h', 'help', GetOpt.NO_ARGUMENT);
 
 			if (arguments.length > 1) {
-				opts.parse();
+				opts.parse(arguments);
 				var taskfile = new File(this.cwd + opts.get('taskfile'));
 				if (!taskfile.isFile()) {
 					console.log('\nNo taskfile found! Use --help for more details.\n');
