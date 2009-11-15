@@ -12,19 +12,20 @@ The current version of Jask requires v8cgi 0.6.0. You can find more information 
 	$ git clone git://github.com/keeto/jask.git jask
 	$ cd jask
 	$ chmod +x jask
-	$ cp jask /usr/bin
+	$ cp jask ~/sbin
 	$ jask
-	
 	JASK: Javascript Tasks
+
 	Usage:
 	  $ jask [-t=taskfile] namespace:task args
 	  $ jask -l
 
 	Options:
-	  -t=file,		Set taskfile.
-	  --taskfile=file
-	  -l, --list		List available tasks
-	  -h, --help		Show this help text.
+	  -l, --list				List available tasks
+	  -t=file, --taskfile=file		Set taskfile.
+	  -q, --quiet				Don't show any log messages.
+	  -v, --verbose				Show verbose logs.
+	  -h, --help				Show this help text.
 
 
 Using Jask
@@ -64,7 +65,7 @@ Taskfiles are simple Javascript files that contain a single `export` declaration
 
 The taskfile above will create a new namespace named `myTask` with two tasks, `task1` and `task2`. The function `_hidden`, as well as any other function that starts with an underscore, is a private function. It is absolutely necessary to add the export declaration together with the namespace, or Jask will not run.
 
-Each task is a simple javascript function. Because task namespaces are objects, you can use `this` to refer to the current namespace. You also have access to the global namespace (via `global`). And because taskfiles are plain v8cgi javascript files, you can include any modules you'll need on your taskfile using the `include` and `require` declarations (see the [v8cgi docs](http://code.google.com/p/v8cgi/wiki/API) for more details).
+Each task is a simple javascript function. Because task namespaces are objects, you can use `this` to refer to the current namespace. You also have access to the global namespace (via `global`). And because taskfiles are plain javascript files, you can include any modules you'll need on your taskfile using the `include` and `require` declarations (see the [v8cgi docs](http://code.google.com/p/v8cgi/wiki/API) for more details).
 
 To run a task, simply pass the namespace and task name to Jask, together with your arguments, separated by spaces:
 
@@ -129,24 +130,62 @@ You can document your tasks by adding a `Desc` property on your taskfile:
 		
 		Desc: {
 			getWater: ['Gets some water'],
-			drink: ['Drinks the water', 'name']
+			drink: ['Drinks the water', 'name, unusedArg']
 		},
 	
 		getWater: function(){
 			console.log("Got water!\n");
 		},
 	
-		'drink < getWater': function(name){
+		'drink < getWater': function(name, unusedArg){
 			console.log("Drink " + name + "\n");
+		},
+		
+		test: function(name){
+			console.log("No description!")
 		}
 	
 	};
 
+These information will be displayed when the user runs `jask -l`. Public tasks with no description are also displayed, but they won't have any nice documentation:
+	
+	Available Tasks:
+	
+		myTasks:getWater		Gets some water
+		myTask:drink [name]		Drinks the water
+		myTask:test
+
+
+The Console Object
+------------------
+
+Jask includes a built-in `console` object that can be used to log and time your tasks. All loggers output to `os.stdout`:
+
+	console.log(1, 2, 3);
+	/* 
+	outputs:
+	 	1 2 3
+	*/
+	
+	console.dir({a: 1}, {b:'string'});
+	/* 
+	outputs:
+	 	{"a": 1}
+		{"b": "string"}
+	*/
+	
+	console.time('id');
+	console.timeEnd('id');
+	/* 
+	outputs:
+	 	id: 0ms.
+	*/
+
 
 Useful Links
 ------------
-[Keetology](http://keetology.com) - The author's site.
-[v8cgi](http://code.google.com/p/v8cgi/) - Official v8cgi repo.
+- [Keetology](http://keetology.com) - The author's site.
+- [v8cgi](http://code.google.com/p/v8cgi/) - Official v8cgi repo.
 
 
 Copyright and License
