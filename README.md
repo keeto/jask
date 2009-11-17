@@ -17,7 +17,7 @@ The current version of Jask requires v8cgi 0.6.0. You can find more information 
 	JASK: Javascript Tasks
 
 	Usage:
-	  $ jask [-t=taskfile] namespace:task args
+	  $ jask [-t=taskfile] [namespace:]task args
 	  $ jask -l
 
 	Options:
@@ -31,9 +31,13 @@ The current version of Jask requires v8cgi 0.6.0. You can find more information 
 Using Jask
 ----------
 
-When run, Jask looks for a `taskfile` in the current directory. If you want to set the taskfile to read, use `-t=filename` or `--taskfile=filename`:
+When run, Jask looks for a `taskfile` in the current directory. If you want to set the taskfile to read, use `-t=filename` or `--taskfile=filename`. To run a specific task, you put in the task's namespace, then the taskname then arguments, if any:
 	
 	$ jask [-t=taskfile] namespace:task arguments
+
+Optionally, if you only have one namespace in your task file, you can omit the namespace and just pass the taskname:
+	
+	$ jask [-t=taskfile] task arguments
 	
 To get a list of all available task, use `-l` or `--list`.
 
