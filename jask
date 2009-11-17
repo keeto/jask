@@ -175,7 +175,7 @@ try {
 
 		help: function(){
 			var buff = "JASK: Javascript Tasks\n\nUsage:\n";
-			buff += "  $ jask [-t=taskfile] namespace:task args\n";
+			buff += "  $ jask [-t=taskfile] [namespace:]task args\n";
 			buff += "  $ jask -l\n\nOptions:\n";
 			buff += "  -l, --list\t\t\t\tList available tasks\n";
 			buff += "  -t=file, --taskfile=file\t\tSet taskfile.\n";
