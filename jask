@@ -49,11 +49,13 @@ this.console = {
 		this._log(name + ": " + delta + "ms.");
 		return this;
 	}
-}
+};
 
 try {
 
 	include('getopt');
+
+	var nscount = 0, nslast = "";
 
 	this.Jask = {
 
@@ -76,8 +78,7 @@ try {
 				if (opts.get('help')) return this.help();
 				var taskfile = new File(this.cwd + opts.get('taskfile'));
 				if (!taskfile.isFile()) {
-					console.log('\nNo taskfile found! Use --help for more details.\n');
-					return null;
+					return console.log('\nNo taskfile found! Use --help for more details.\n');
 				} else {
 					this.parseTasksFile(taskfile.toString());
 					if (opts.get('list')) return this.listTasks();
@@ -86,17 +87,16 @@ try {
 					var task_args = opts.get();
 					if (task_args.length !== 0) {
 						var metargs = task_args.shift().split(':');
-						var nspace = metargs[0];
-						var action = metargs[1] || '_';
+						var nspace = (metargs.length == 1 && nscount == 1) ? nslast : metargs[0];
+						var action = (metargs.length == 1 && nscount == 1) ? metargs[0] : metargs[1] || '_';
 						if (this.Tasks[nspace]  && this.Tasks[nspace][action] && action.charAt(0) !== '_') {
 							Jask.Args = task_args;
 							if (verbose) console.time('Jask Done; Time')._log('Starting Tasks..');
 							this.Tasks[nspace][action].apply(this.Tasks[nspace], task_args);
 							if (verbose) console.timeEnd('Jask Done; Time');
-							return null;
+							return;
 						} else {
-							console.log('\nNo such task! Use --help for more details or --list to see available tasks.\n');
-							return null;
+							return console.log('\nNo such task! Use --help for more details or --list to see available tasks.\n');
 						}
 					}
 				}
@@ -120,7 +120,8 @@ try {
 							this.parseTask(item, namespace, taskfile[namespace][item]);
 						}
 					}
-				};
+					nscount++; nslast = namespace;
+				}
 		},
 
 		parseTask: function(item, nspace, func){
@@ -185,7 +186,7 @@ try {
 			return null;
 		}
 
-	}
+	};
 
 	Jask.Args = [];
 	Jask.Tasks = {};
