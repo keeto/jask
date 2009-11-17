@@ -96,7 +96,8 @@ try {
 							if (verbose) console.timeEnd('Jask Done; Time');
 							return;
 						} else {
-							return console.log('\nNo such task! Use --help for more details or --list to see available tasks.\n');
+							return console.log('No such task!\
+												\n(Use --help for more details or --list to see available tasks.)\n');
 						}
 					}
 				}
