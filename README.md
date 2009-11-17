@@ -21,11 +21,11 @@ The current version of Jask requires v8cgi 0.6.0. You can find more information 
 	  $ jask -l
 
 	Options:
-	  -l, --list				List available tasks
+	  -l, --list					List available tasks
 	  -t=file, --taskfile=file		Set taskfile.
-	  -q, --quiet				Don't show any log messages.
-	  -v, --verbose				Show verbose logs.
-	  -h, --help				Show this help text.
+	  -q, --quiet					Don't show any log messages.
+	  -v, --verbose					Show verbose logs.
+	  -h, --help					Show this help text.
 
 
 Using Jask
