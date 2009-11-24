@@ -1,16 +1,31 @@
 Jask: Javascript Tasks
 ======================
 
-Jask is a simple task runner written in Javascript and powered by [v8cgi](http://code.google.com/p/v8cgi/). Somewhat inspired by Ruby's Rake.
+Jask is a simple task runner written in Javascript, and can be used with [v8cgi](http://code.google.com/p/v8cgi/) or [node.js](http://nodejs.org/). Somewhat inspired by Ruby's Rake.
 
 
 Installing Jask
 ---------------
 
-The current version of Jask requires v8cgi 0.6.0. You can find more information regarding installing v8cgi on the Google Code project page ([link](http://code.google.com/p/v8cgi/)).
+In order to run Jask, you'll need:
+
+- A working [v8cgi](http://code.google.com/p/v8cgi/) or [nodejs](http://nodejs.org/) installation.
+- The v8cgi [GetOpt Module](http://code.google.com/p/v8cgi/source/browse/trunk/lib/getopt.js) (for command line parsing). This is included in the v8cgi package. If you're using node.js, you'll have to download a copy of the module and add it to your modules directory (usually `/usr/local/lib/node/libraries/`).
+
+To install Jask:
 
 	$ git clone git://github.com/keeto/jask.git jask
 	$ cd jask
+	$ node jask		# node.js
+	$ v8cgi jask	# v8cgi
+	
+If you want to use Jask without specifying the engine, you can edit the shebang line on the Jask source:
+
+	#! /usr/bin/env v8cgi
+	#! /usr/bin/env node
+
+Then copy it to somewhere accessible:
+
 	$ chmod +x jask
 	$ cp jask ~/sbin
 	$ jask
@@ -31,7 +46,7 @@ The current version of Jask requires v8cgi 0.6.0. You can find more information 
 Using Jask
 ----------
 
-When run, Jask looks for a `taskfile` in the current directory. If you want to set the taskfile to read, use `-t=filename` or `--taskfile=filename`. To run a specific task, you put in the task's namespace, then the taskname then arguments, if any:
+When run, Jask looks for a `taskfile.js` file in the current directory. If you want to set the taskfile to read, use `-t=filename` or `--taskfile=filename` (omit the '.js' when specifying the taskfile). To run a specific task, you put in the task's namespace, then the taskname then arguments, if any:
 	
 	$ jask [-t=taskfile] namespace:task arguments
 
@@ -47,7 +62,7 @@ To get a list of all available task, use `-l` or `--list`.
 Taskfiles
 ---------
 
-Taskfiles are simple Javascript files that contain a single `export` declaration:
+Taskfiles are simple Javascript files (with the '.js' extension) that contain an `export` declaration:
 
 	exports.myTasks = {
 		
@@ -69,7 +84,7 @@ Taskfiles are simple Javascript files that contain a single `export` declaration
 
 The taskfile above will create a new namespace named `myTask` with two tasks, `task1` and `task2`. The function `_hidden`, as well as any other function that starts with an underscore, is a private function. It is absolutely necessary to add the export declaration together with the namespace, or Jask will not run.
 
-Each task is a simple javascript function. Because task namespaces are objects, you can use `this` to refer to the current namespace. You also have access to the global namespace (via `global`). And because taskfiles are plain javascript files, you can include any modules you'll need on your taskfile using the `include` and `require` declarations (see the [v8cgi docs](http://code.google.com/p/v8cgi/wiki/API) for more details).
+Each task is a simple javascript function. Because task namespaces are objects, you can use `this` to refer to the current namespace. You also have access to the global namespace (via `Engine.Global`). And because taskfiles are plain javascript files, you can include any modules you'll need on your taskfile using the `include` and `require` declarations (see the [v8cgi](http://code.google.com/p/v8cgi/wiki/API) or [nodejs](http://nodejs.org/api.html) docs for more details).
 
 To run a task, simply pass the namespace and task name to Jask, together with your arguments, separated by spaces:
 
@@ -185,11 +200,21 @@ Jask includes a built-in `console` object that can be used to log and time your 
 	 	id: 0ms.
 	*/
 
+The Engine Object
+-----------------
+
+In order for Jask to run on both v8cgi and nodejs, Jask detects the engine using simple feature detection. There's a global `Engine` object accessible to all tasks files.
+	
+- `Engine.name` - could either be `nodejs` or `v8cgi`
+- `Engine.nodejs` - true if the current engine is `nodejs`
+- `Engine.v8cgi` - true if the current engine is `v8cgi`
+
 
 Useful Links
 ------------
 - [Keetology](http://keetology.com) - The author's site.
 - [v8cgi](http://code.google.com/p/v8cgi/) - Official v8cgi repo.
+- [node.js](http://nodejs.org/) - Official node.js site.
 
 
 Copyright and License

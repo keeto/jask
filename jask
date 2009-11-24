@@ -1,8 +1,7 @@
 #! /usr/bin/env v8cgi
-
 /*
 Jask: Javascript Tasks
-	Simple JS Tasks using V8CGI.
+	Simple JS Task Runner.
 
 License:
 	MIT-Style License (See included README file for details).
@@ -11,6 +10,85 @@ Copyright:
 	Copyright 2009 Mark Obcena, <http://keetology.com>
 */
 
+// Basic Engine Detection.
+(function(){
+
+	var self = this;
+
+	this.Engine = { name: '', Global: this };
+
+	var Engines = {
+
+		'nodejs': function(){
+			return (typeof process == 'object'
+						&& process.watchFile instanceof Function
+						&& process.compile instanceof Function
+						&& GLOBAL == self);
+		},
+
+		'v8cgi': function(){
+			return (typeof system == 'object'
+						&& system.stdout instanceof Function
+						&& onexit instanceof Function
+						&& global == self);
+		}
+
+	};
+
+	Engine.detect = function(){
+		for (var i in Engines){
+			var version = Engines[i]();
+			if (version){
+				this.name = i;
+				this[i] = true;
+			}
+		}
+	};
+
+	Engine.detect();
+
+	Engine.stdout = (function(){
+		if (Engine.nodejs) return process.stdio;
+		if (Engine.v8cgi) return {write: function(){
+			var args = Array.prototype.slice.call(arguments);
+			return system.stdout.apply(system, args);
+		}}
+		return {write: function(){}};
+	})();
+
+	Engine.args = (function(){
+		if (Engine.nodejs) return process.ARGV;
+		if (Engine.v8cgi) return system.args;
+		return [];
+	})();
+
+	Engine.include = (function(){
+		if (Engine.nodejs) return function(name){
+			return process.mixin(GLOBAL, require(name));
+		};
+		if (Engine.v8cgi) return include;
+	})();
+
+	Engine.cwd = (function(){
+		if (Engine.nodejs) return process.cwd;
+		if (Engine.v8cgi) return system.getcwd;
+	})();
+	
+	Engine.isFile = (function(){
+		if (Engine.nodejs) return (function(name){
+			var stats, posix = require('posix');
+			try { stats = posix.stat(name).wait(); } catch(e){ return null; }
+			return posix.stat(name).wait().isFile() ? name : null;
+		});
+		if (Engine.v8cgi) return (function(name){
+			var file = new File(name);
+			return file.isFile() ? name : null;
+		});
+	})();
+
+})();
+
+// Start of Jask
 (function(){
 
 var verbose = false, quiet = false, timers = {};
@@ -20,13 +98,13 @@ this.console = {
 	log: function(){
 		args = Array.prototype.slice.call(arguments);
 		if (verbose) args.unshift("  ");
-		if (!quiet) system.stdout.call(this, args.join(' ') + '\n');
+		if (!quiet) Engine.stdout.write.call(null, args.join(' ') + '\n');
 		return this;
 	},
 
 	_log: function(){
 		args = Array.prototype.slice.call(arguments); args.unshift("->");
-		if (!quiet) system.stdout.call(this, args.join(' ') + '\n');
+		if (!quiet) Engine.stdout.write.call(this, args.join(' ') + '\n');
 		return this;
 	},
 
@@ -53,7 +131,7 @@ this.console = {
 
 try {
 
-	include('getopt');
+	Engine.include('getopt');
 
 	var nscount = 0, nslast = "";
 
@@ -63,7 +141,7 @@ try {
 		Args: [],
 		Descs: {},
 
-		cwd: system.getcwd() + "/",
+		cwd: Engine.cwd() + "/",
 
 		initialize: function(){
 			Jask.Tasks = this.Tasks;
@@ -76,11 +154,11 @@ try {
 			if (arguments.length > 0) {
 				opts.parse.apply(opts, arguments);
 				if (opts.get('help')) return this.help();
-				var taskfile = new File(this.cwd + opts.get('taskfile'));
-				if (!taskfile.isFile()) {
+				var taskfile = Engine.isFile(this.cwd + opts.get('taskfile') + '.js');
+				if (!taskfile) {
 					return console.log('\nNo taskfile found! Use --help for more details.\n');
 				} else {
-					this.parseTasksFile(taskfile.toString());
+					this.parseTasksFile(this.cwd + opts.get('taskfile'));
 					if (opts.get('list')) return this.listTasks();
 					if (opts.get('quiet')) quiet = true;
 					if (opts.get('verbose')) verbose = true;
@@ -106,23 +184,23 @@ try {
 		},
 
 		parseTasksFile: function(taskfile){
-				taskfile = include(taskfile);
-				for (var namespace in taskfile) {
-					var tasklist = this.Tasks[namespace] = {};
-					for (var item in taskfile[namespace]) {
-						if (item == 'Include') {
-							var includes = taskfile[namespace][item];
-							for (var x = 0, y = includes.length; x < y; x++) {
-								this.parseTasksFile(this.cwd + includes[x]);
-							}
-						} else if (item == 'Desc') {
-							this.Descs[namespace] = taskfile[namespace][item];
-						} else {
-							this.parseTask(item, namespace, taskfile[namespace][item]);
+			taskfile = require(taskfile);
+			for (var namespace in taskfile) {
+				var tasklist = this.Tasks[namespace] = {};
+				for (var item in taskfile[namespace]) {
+					if (item == 'Include') {
+						var includes = taskfile[namespace][item];
+						for (var x = includes.reverse().length; x--;){
+							this.parseTasksFile(this.cwd + includes[x]);
 						}
+					} else if (item == 'Desc') {
+						this.Descs[namespace] = taskfile[namespace][item];
+					} else {
+						this.parseTask(item, namespace, taskfile[namespace][item]);
 					}
-					nscount++; nslast = namespace;
 				}
+				nscount++; nslast = namespace;
+			}
 		},
 
 		parseTask: function(item, nspace, func){
@@ -137,7 +215,6 @@ try {
 				if (condition == '<') {
 					funn = function(){
 						args = Array.prototype.slice.apply(arguments);
-						console.log(onspa, oitem);
 						Jask.Tasks[onspa][oitem].apply(Jask.Tasks[onspa], args);
 						func.apply(Jask.Tasks[nspace], args);
 					};
@@ -192,11 +269,12 @@ try {
 	Jask.Args = [];
 	Jask.Tasks = {};
 
-	system.args.shift();
-	Jask.initialize(system.args);
+	Engine.args.shift();
+	if (Engine.nodejs) Engine.args.shift();
+	Jask.initialize(Engine.args);
 
 } catch(e) {
-	console.log(e);
+	for (var i in e) console.log(i + ': ' + e[i]);
 }
 
 })();
