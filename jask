@@ -101,14 +101,14 @@ Copyright:
 			for (var i in module) self[i] = module[i];
 			return module;
 		};
-		return {};
+		return function(){};
 	})();
 
 	Engine.cwd = (function(){
 		if (Engine.nodejs) return process.cwd;
 		if (Engine.v8cgi) return system.getcwd;
 		if (Engine.flusspferd) return require('fs-base').workingDirectory;
-		return '';
+		return function(){};
 	})();
 
 	Engine.isFile = (function(){
@@ -124,7 +124,7 @@ Copyright:
 		if (Engine.flusspferd) return (function(name){
 			return require('fs-base').isFile(name);
 		});
-		return null;
+		return function(){};
 	})();
 
 })();
@@ -203,7 +203,7 @@ try {
 			}
 			return this.help();
 		},
-		
+
 		setupOpts: function(){
 			var opts = new GetOpt();
 			opts.add('list', 'List all available tasks.', false, 'l', 'list', GetOpt.NO_ARGUMENT);
@@ -213,7 +213,7 @@ try {
 			opts.add('help', 'Show help text.', false, 'h', 'help', GetOpt.NO_ARGUMENT);
 			return opts;
 		},
-		
+
 		runTask: function(task_args){
 			if (task_args.length !== 0) {
 				var metargs = task_args.shift().split(':');
