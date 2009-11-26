@@ -1,7 +1,7 @@
 Jask: Javascript Tasks
 ======================
 
-Jask is a simple task runner written in Javascript, and can be used with [v8cgi](http://code.google.com/p/v8cgi/) or [node.js](http://nodejs.org/). Somewhat inspired by Ruby's Rake.
+Jask is a simple task runner written in Javascript, and can be used with [v8cgi](http://code.google.com/p/v8cgi/), [node.js](http://nodejs.org/) or [flusspferd](http://flusspferd.org). Somewhat inspired by Ruby's Rake.
 
 
 Installing Jask
@@ -9,20 +9,33 @@ Installing Jask
 
 In order to run Jask, you'll need:
 
-- A working [v8cgi](http://code.google.com/p/v8cgi/) or [nodejs](http://nodejs.org/) installation.
-- The v8cgi [GetOpt Module](http://code.google.com/p/v8cgi/source/browse/trunk/lib/getopt.js) (for command line parsing). This is included in the v8cgi package. If you're using node.js, you'll have to download a copy of the module and add it to your modules directory (usually `/usr/local/lib/node/libraries/`).
+- One of the following JS Engines:
+
+	- [v8cgi](http://code.google.com/p/v8cgi/)
+	- [nodejs](http://nodejs.org/)
+	- [flusspferd](http://flusspferd.org)
+
+- The v8cgi [GetOpt Module](http://code.google.com/p/v8cgi/source/browse/trunk/lib/getopt.js) (for command line parsing). 
+
+	- v8cgi: included in the v8cgi package. 
+	- node.js: download a copy of the module and add it to the same directory as Jask.
+	- flusspferd: download a copy of the module and add it to the same directory as Jask.
+
+(**Note:** Flusspferd has a built-in module named `getopt`--but it's not compatible with the library Jask is using. You'll have to download a copy of the module and drop it on your directory.)
 
 To install Jask:
 
 	$ git clone git://github.com/keeto/jask.git jask
 	$ cd jask
-	$ node jask		# node.js
-	$ v8cgi jask	# v8cgi
+	$ node jask			# node.js
+	$ v8cgi jask		# v8cgi
+	$ flusspferd jask	# flusspferd
 	
 If you want to use Jask without specifying the engine, you can edit the shebang line on the Jask source:
 
 	#! /usr/bin/env v8cgi
 	#! /usr/bin/env node
+	#! /usr/bin/env flusspferd
 
 Then copy it to somewhere accessible:
 
@@ -62,7 +75,7 @@ To get a list of all available task, use `-l` or `--list`.
 Taskfiles
 ---------
 
-Taskfiles are simple Javascript files (with the '.js' extension) that contain an `export` declaration:
+Taskfiles are simple Javascript files (with the `.js` extension) that contain an `exports` declaration:
 
 	exports.myTasks = {
 		
@@ -131,7 +144,7 @@ You can specify simple dependencies using your task names:
 With this dependency declaration, `getWater` will be called first before `drink`. The name of the task should will always be on the left, and the name of the dependency on the right. You can specify whether to run the task dependancy before or after the task.
 
 	'drink < getWater' // getWater -> drink.
-	'drink > getWater' // drink -> getWater (?).
+	'drink > getWater' // drink -> getWater.
 
 Be sure you place spaces before `<` and `>`, otherwise, your task will not be parsed. You can also specify the namespace of the task:
 
@@ -203,11 +216,12 @@ Jask includes a built-in `console` object that can be used to log and time your 
 The Engine Object
 -----------------
 
-In order for Jask to run on both v8cgi and nodejs, Jask detects the engine using simple feature detection. There's a global `Engine` object accessible to all tasks files.
+In order for Jask to run on both v8cgi and nodejs, Jask detects the engine using simple feature detection. There's a global `engine` object accessible to all tasks files.
 	
-- `Engine.name` - could either be `nodejs` or `v8cgi`
-- `Engine.nodejs` - true if the current engine is `nodejs`
-- `Engine.v8cgi` - true if the current engine is `v8cgi`
+- `engine.name` - could either be `nodejs` or `v8cgi`
+- `engine.nodejs` - true if the current engine is `nodejs`
+- `engine.v8cgi` - true if the current engine is `v8cgi`
+- `engine.flusspferd` - true if the current engine is `flusspferd`
 
 
 Useful Links
@@ -215,6 +229,7 @@ Useful Links
 - [Keetology](http://keetology.com) - The author's site.
 - [v8cgi](http://code.google.com/p/v8cgi/) - Official v8cgi repo.
 - [node.js](http://nodejs.org/) - Official node.js site.
+- [flusspferd](http://flusspferd.org) - Official flusspferd site.
 
 
 Copyright and License
