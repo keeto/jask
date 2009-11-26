@@ -15,7 +15,7 @@ Copyright:
 
 	var self = this;
 
-	this.Engine = { name: '', Global: this };
+	this.engine = this.Engine = { name: '', global: this };
 
 	var Engines = {
 
@@ -24,6 +24,18 @@ Copyright:
 						&& process.watchFile instanceof Function
 						&& process.compile instanceof Function
 						&& GLOBAL == self);
+		},
+
+		'flusspferd': function(){
+			try {
+				var flusspferd = require('flusspferd');
+				return (typeof flusspferd == 'object'
+							&& typeof flusspferd.executableName == 'string'
+							&& typeof flusspferd.relocatable == 'boolean'
+							&& !!require.alias && !!require.module_cache);
+			} catch(e){
+				return false;
+			}
 		},
 
 		'v8cgi': function(){
@@ -47,33 +59,58 @@ Copyright:
 
 	Engine.detect();
 
+	Engine.system = (function(){
+		if (Engine.nodejs) return require('sys');
+		if (Engine.v8cgi) return system;
+		if (Engine.flusspferd) return require('system');
+		return {};
+	})();
+
 	Engine.stdout = (function(){
 		if (Engine.nodejs) return process.stdio;
 		if (Engine.v8cgi) return {write: function(){
 			var args = Array.prototype.slice.call(arguments);
 			return system.stdout.apply(system, args);
-		}}
+		}};
+		if (Engine.flusspferd) return {
+			write: function(){
+				var args = Array.prototype.slice.call(arguments);
+				Engine.system.stdout.write.apply(Engine.system.stdout, args);
+				return Engine.system.stdout.flush();
+			}
+		};
 		return {write: function(){}};
 	})();
 
 	Engine.args = (function(){
 		if (Engine.nodejs) return process.ARGV;
 		if (Engine.v8cgi) return system.args;
+		if (Engine.flusspferd) return Engine.system.args;
 		return [];
 	})();
 
 	Engine.include = (function(){
 		if (Engine.nodejs) return function(name){
-			return process.mixin(GLOBAL, require(name));
+			var module = require(name);
+			process.mixin(GLOBAL, module);
+			return module;
 		};
 		if (Engine.v8cgi) return include;
+		if (Engine.flusspferd) return function(name){
+			var module = require(name);
+			for (var i in module) self[i] = module[i];
+			return module;
+		};
+		return {};
 	})();
 
 	Engine.cwd = (function(){
 		if (Engine.nodejs) return process.cwd;
 		if (Engine.v8cgi) return system.getcwd;
+		if (Engine.flusspferd) return require('fs-base').workingDirectory;
+		return '';
 	})();
-	
+
 	Engine.isFile = (function(){
 		if (Engine.nodejs) return (function(name){
 			var stats, posix = require('posix');
@@ -84,6 +121,10 @@ Copyright:
 			var file = new File(name);
 			return file.isFile() ? name : null;
 		});
+		if (Engine.flusspferd) return (function(name){
+			return require('fs-base').isFile(name);
+		});
+		return null;
 	})();
 
 })();
@@ -96,20 +137,20 @@ var verbose = false, quiet = false, timers = {};
 this.console = {
 
 	log: function(){
-		args = Array.prototype.slice.call(arguments);
+		var args = Array.prototype.slice.call(arguments);
 		if (verbose) args.unshift("  ");
 		if (!quiet) Engine.stdout.write.call(null, args.join(' ') + '\n');
 		return this;
 	},
 
 	_log: function(){
-		args = Array.prototype.slice.call(arguments); args.unshift("->");
+		var args = Array.prototype.slice.call(arguments); args.unshift("->");
 		if (!quiet) Engine.stdout.write.call(this, args.join(' ') + '\n');
 		return this;
 	},
 
 	dir: function(){
-		args = Array.prototype.slice.call(arguments);
+		var args = Array.prototype.slice.call(arguments);
 		for (var i = args.reverse().length; i--;) {
 			var x = JSON.stringify(args[i]);
 			if (x) this.log(x);
@@ -131,7 +172,7 @@ this.console = {
 
 try {
 
-	Engine.include('getopt');
+	engine.include(engine.v8cgi ? 'getopt': './getopt');
 
 	var nscount = 0, nslast = "";
 
@@ -141,49 +182,60 @@ try {
 		Args: [],
 		Descs: {},
 
-		cwd: Engine.cwd() + "/",
+		cwd: engine.cwd() + "/",
 
 		initialize: function(){
 			Jask.Tasks = this.Tasks;
+			var opts = this.setupOpts();
+			if (arguments.length > 0) {
+				opts.parse.apply(opts, arguments);
+				if (opts.get('help')) return this.help();
+				var taskfile = engine.isFile(this.cwd + opts.get('taskfile') + '.js');
+				if (!taskfile) {
+					return console.log('\nNo taskfile found! Use --help for more details.\n');
+				} else {
+					this.parseTasksFile(this.cwd, opts.get('taskfile'));
+					if (opts.get('list')) return this.listTasks();
+					if (opts.get('quiet')) quiet = true;
+					if (opts.get('verbose')) verbose = true;
+					if (this.runTask(opts.get())) return true;
+				}
+			}
+			return this.help();
+		},
+		
+		setupOpts: function(){
 			var opts = new GetOpt();
 			opts.add('list', 'List all available tasks.', false, 'l', 'list', GetOpt.NO_ARGUMENT);
 			opts.add('taskfile', 'The tasksfile to use.', 'taskfile', 't', 'taskfile', GetOpt.REQUIRED_ARGUMENT);
 			opts.add('quiet', 'Hide all output messages.', false, 'q', 'quiet', GetOpt.NO_ARGUMENT);
 			opts.add('verbose', 'Display verbose messages.', false, 'v', 'verbose', GetOpt.NO_ARGUMENT);
 			opts.add('help', 'Show help text.', false, 'h', 'help', GetOpt.NO_ARGUMENT);
-			if (arguments.length > 0) {
-				opts.parse.apply(opts, arguments);
-				if (opts.get('help')) return this.help();
-				var taskfile = Engine.isFile(this.cwd + opts.get('taskfile') + '.js');
-				if (!taskfile) {
-					return console.log('\nNo taskfile found! Use --help for more details.\n');
+			return opts;
+		},
+		
+		runTask: function(task_args){
+			if (task_args.length !== 0) {
+				var metargs = task_args.shift().split(':');
+				var nspace = (metargs.length == 1 && nscount == 1) ? nslast : metargs[0];
+				var action = (metargs.length == 1 && nscount == 1) ? metargs[0] : metargs[1] || '_';
+				if (this.Tasks[nspace]  && this.Tasks[nspace][action] && action.charAt(0) !== '_') {
+					Jask.Args = task_args;
+					if (verbose) console.time('Jask Done; Time')._log('Starting Tasks..');
+					this.Tasks[nspace][action].apply(this.Tasks[nspace], task_args);
+					if (verbose) console.timeEnd('Jask Done; Time');
+					return true;
 				} else {
-					this.parseTasksFile(this.cwd + opts.get('taskfile'));
-					if (opts.get('list')) return this.listTasks();
-					if (opts.get('quiet')) quiet = true;
-					if (opts.get('verbose')) verbose = true;
-					var task_args = opts.get();
-					if (task_args.length !== 0) {
-						var metargs = task_args.shift().split(':');
-						var nspace = (metargs.length == 1 && nscount == 1) ? nslast : metargs[0];
-						var action = (metargs.length == 1 && nscount == 1) ? metargs[0] : metargs[1] || '_';
-						if (this.Tasks[nspace]  && this.Tasks[nspace][action] && action.charAt(0) !== '_') {
-							Jask.Args = task_args;
-							if (verbose) console.time('Jask Done; Time')._log('Starting Tasks..');
-							this.Tasks[nspace][action].apply(this.Tasks[nspace], task_args);
-							if (verbose) console.timeEnd('Jask Done; Time');
-							return;
-						} else {
-							return console.log('No such task!\
-												\n(Use --help for more details or --list to see available tasks.)\n');
-						}
-					}
+					console.log('No such task! (Use --help for more details or --list to see available tasks.)\n');
+					return true;
 				}
 			}
-			return this.help();
+			return false;
 		},
 
-		parseTasksFile: function(taskfile){
+		parseTasksFile: function(dir, taskfile){
+			dir = (!!engine.flusspferd) ? './' : dir;
+			taskfile = dir + taskfile;
 			taskfile = require(taskfile);
 			for (var namespace in taskfile) {
 				var tasklist = this.Tasks[namespace] = {};
@@ -191,7 +243,7 @@ try {
 					if (item == 'Include') {
 						var includes = taskfile[namespace][item];
 						for (var x = includes.reverse().length; x--;){
-							this.parseTasksFile(this.cwd + includes[x]);
+							this.parseTasksFile(this.cwd, includes[x]);
 						}
 					} else if (item == 'Desc') {
 						this.Descs[namespace] = taskfile[namespace][item];
@@ -214,13 +266,13 @@ try {
 				var funn = null;
 				if (condition == '<') {
 					funn = function(){
-						args = Array.prototype.slice.apply(arguments);
+						var args = Array.prototype.slice.apply(arguments);
 						Jask.Tasks[onspa][oitem].apply(Jask.Tasks[onspa], args);
 						func.apply(Jask.Tasks[nspace], args);
 					};
 				} else {
 					funn = function(){
-						args = Array.prototype.slice.apply(arguments);
+						var args = Array.prototype.slice.apply(arguments);
 						func.apply(Jask.Tasks[nspace], args);
 						Jask.Tasks[onspa][oitem].apply(Jask.Tasks[onspa], args);
 					};
@@ -228,7 +280,7 @@ try {
 			}
 			this.Tasks[nspace][item] = function(){
 				if (verbose) console._log(['Start task ', nspace,':', item].join(''));
-				args = Array.prototype.slice.apply(arguments);
+				var args = Array.prototype.slice.apply(arguments);
 				(funn || func).apply(this, args);
 				if (verbose) console._log(['End task ', nspace,':', item].join(''));
 			};
@@ -269,12 +321,12 @@ try {
 	Jask.Args = [];
 	Jask.Tasks = {};
 
-	Engine.args.shift();
-	if (Engine.nodejs) Engine.args.shift();
-	Jask.initialize(Engine.args);
+	engine.args.shift();
+	if (engine.nodejs) engine.args.shift();
+	Jask.initialize(engine.args);
 
 } catch(e) {
-	for (var i in e) console.log(i + ': ' + e[i]);
+	console.log(e);
 }
 
 })();
