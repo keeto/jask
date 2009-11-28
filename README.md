@@ -218,10 +218,13 @@ The Engine Object
 
 In order for Jask to run on both v8cgi and nodejs, Jask detects the engine using simple feature detection. There's a global `engine` object accessible to all tasks files.
 	
-- `engine.name` - could either be `nodejs` or `v8cgi`
+- `engine.name` - name of the current engine
+- `engine.version` - version number of the current engine
+- `engine.global` - pointer to the global object for the current engine
+
+- `engine.flusspferd` - true if the current engine is `flusspferd`
 - `engine.nodejs` - true if the current engine is `nodejs`
 - `engine.v8cgi` - true if the current engine is `v8cgi`
-- `engine.flusspferd` - true if the current engine is `flusspferd`
 
 
 Useful Links

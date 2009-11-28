@@ -15,34 +15,34 @@ Copyright:
 
 	var self = this;
 
-	this.engine = this.Engine = { name: '', global: this };
+	this.engine = this.Engine = { name: '', version: '0.0', global: this };
 
 	var Engines = {
 
 		'nodejs': function(){
 			return (typeof process == 'object'
-						&& process.watchFile instanceof Function
-						&& process.compile instanceof Function
-						&& GLOBAL == self);
+					&& process.watchFile instanceof Function
+					&& process.compile instanceof Function
+					&& GLOBAL == self) ? process.version : false;
 		},
 
 		'flusspferd': function(){
 			try {
 				var flusspferd = require('flusspferd');
 				return (typeof flusspferd == 'object'
-							&& typeof flusspferd.executableName == 'string'
-							&& typeof flusspferd.relocatable == 'boolean'
-							&& !!require.alias && !!require.module_cache);
+						&& typeof flusspferd.executableName == 'string'
+						&& typeof flusspferd.relocatable == 'boolean'
+						&& !!require.alias && !!require.module_cache) ? flusspferd.version : false;
 			} catch(e){
 				return false;
 			}
 		},
 
 		'v8cgi': function(){
-			return (typeof system == 'object'
-						&& system.stdout instanceof Function
-						&& onexit instanceof Function
-						&& global == self);
+			return (typeof v8cgi == 'object' && typeof system == 'object'
+					&& !!v8cgi.instanceType && !!v8cgi.executableName) ? v8cgi.version
+				 : (typeof system == 'object' && global == self
+					&& system.stdout instanceof Function) ? '0.7.x' : false;
 		}
 
 	};
@@ -52,6 +52,7 @@ Copyright:
 			var version = Engines[i]();
 			if (version){
 				this.name = i;
+				this.version = version;
 				this[i] = true;
 			}
 		}
